@@ -29,24 +29,30 @@
              (str "," (string/join "," (map prn-param params))))
            ")"))))
 
-(defn build-url [service-url call & [opts]]
-  (str service-url
-       "/render?target="
-       (URLEncoder/encode (build-target call))
-       (when (seq opts)
-         (str "&"
-              (string/join "&" (map (fn [[k v]]
-                                      (str (name k) "=" (URLEncoder/encode (prn-opt v))))
-                                    opts))))))
+(defn build-url
+  ([service-url call]
+    (build-url service-url call nil))
+  ([service-url call opts]
+                 (str service-url
+                      "/render?target="
+                      (URLEncoder/encode (build-target call))
+                      (when (seq opts)
+                        (str "&"
+                             (string/join "&" (map (fn [[k v]]
+                                                     (str (name k) "=" (URLEncoder/encode (prn-opt v))))
+                                                   opts)))))))
 
 (defn func [target func & params]
   {:func   func
    :target target
    :params params})
 
-(defn render [service-url call & [opts]]
-  (d/chain (http/get (build-url service-url call (assoc opts :format "json")))
-           :body
-           bs/to-string
-           json/read-str
-           #(get (first %) "datapoints")))
+(defn render
+  ([service-url call]
+   (render service-url call nil))
+  ([service-url call opts]
+   (d/chain (http/get (build-url service-url call (assoc opts :format "json")))
+            :body
+            bs/to-string
+            json/read-str
+            #(get (first %) "datapoints"))))
